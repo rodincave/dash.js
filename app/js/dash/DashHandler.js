@@ -88,6 +88,10 @@ Dash.dependencies.DashHandler = function () {
                        representation.SegmentBase.Initialization.hasOwnProperty("range")) {
                 initialization = representation.BaseURL;
                 range = representation.SegmentBase.Initialization.range;
+            } else if (representation.hasOwnProperty("mimeType") &&
+                       self.manifestExt.getIsTextTrack(representation.mimeType)) {
+                initialization = representation.BaseURL;
+                range = 0;
             } else {
                 // Go out and find the initialization.
                 url = representation.BaseURL;
@@ -126,6 +130,8 @@ Dash.dependencies.DashHandler = function () {
                 fTimescale,
                 fLength,
                 sDuration,
+                startNumber,
+                idx,
                 isFinished = false;
 
             this.debug.log("Checking for stream end...");
@@ -138,6 +144,7 @@ Dash.dependencies.DashHandler = function () {
                 isFinished = (index >= representation.segments.length);
             } else if (representation.hasOwnProperty("SegmentTemplate") && !representation.SegmentTemplate.hasOwnProperty("SegmentTimeline")) {
                 fTimescale = 1;
+                startNumber = 1;
                 sDuration = Math.floor(duration); // Disregard fractional seconds.  TODO : Is this ok?  The logic breaks if we don't do this...
 
                 if (representation.SegmentTemplate.hasOwnProperty("duration")) {
@@ -147,9 +154,14 @@ Dash.dependencies.DashHandler = function () {
                         fTimescale = representation.SegmentTemplate.timescale;
                     }
 
+                    if (representation.SegmentTemplate.hasOwnProperty("startNumber")) {
+                        startNumber = representation.SegmentTemplate.startNumber;
+                    }
+
                     fLength = (fDuration / fTimescale);
-                    this.debug.log("SegmentTemplate: " + fLength + " * " + index + " = " + (fLength * index) + " / " + sDuration);
-                    isFinished = ((fLength * index) >= sDuration);
+                    idx = index - startNumber;
+                    this.debug.log("SegmentTemplate: " + fLength + " * " + idx + " = " + (fLength * idx) + " / " + sDuration);
+                    isFinished = ((fLength * idx) >= sDuration);
                 }
             }
 
@@ -616,6 +628,7 @@ Dash.dependencies.DashHandler = function () {
         debug: undefined,
         baseURLExt: undefined,
         manifestModel: undefined,
+        manifestExt:undefined,
         errHandler: undefined,
 
         getType: function () {
